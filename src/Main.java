@@ -1,8 +1,101 @@
+//package search;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Paths;
 import java.util.*;
+
+class Finder {
+
+    final FindingStrategy strategy;
+
+    private String passedQuery;
+
+    public Finder(FindingStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    public void setPassedQuery(String passedQuery) {
+        this.passedQuery = passedQuery;
+    }
+
+    public void find(ArrayList<String> person, Map<String, LinkedHashSet<Integer>> mappedFile) {
+        // write your code here
+        this.strategy.getResult(person, mappedFile, passedQuery);
+    }
+}
+
+interface FindingStrategy {
+
+    // Returns search result
+    void getResult(ArrayList<String> person, Map<String, LinkedHashSet<Integer>> mappedFile, String passedQuery);
+}
+
+class AllFindingStrategy implements FindingStrategy {
+
+    @Override
+    public void getResult(ArrayList<String> person, Map<String, LinkedHashSet<Integer>> mappedFile, String passedQuery) {
+        //algorithm for searching and printing lines containing
+        //all the words from the query
+
+        if (mappedFile.containsKey(passedQuery)) {
+            for (Integer i : mappedFile.get(passedQuery)) {
+                System.out.println(person.get(i));
+            }
+        }
+    }
+}
+
+class AnyFindingStrategy implements FindingStrategy {
+
+    @Override
+    public void getResult(ArrayList<String> person, Map<String, LinkedHashSet<Integer>> mappedFile, String passedQuery) {
+        //algorithm for searching and printing lines containing
+        //at least one word from the query
+
+        String[] tokensHolder = passedQuery.split(" ");
+        Set<String> queryRecords = new HashSet<>();
+
+        for (String x : tokensHolder) {
+            if (mappedFile.containsKey(x.toLowerCase())) {
+                for (Integer i : mappedFile.get(x)) {
+                    queryRecords.add(person.get(i));
+                }
+            }
+        }
+
+        queryRecords.forEach(System.out::println);
+    }
+}
+
+class NoneFindingStrategy implements FindingStrategy {
+
+    @Override
+    public void getResult(ArrayList<String> person, Map<String, LinkedHashSet<Integer>> mappedFile, String passedQuery) {
+
+        //algorithm for searching and printing lines not containing
+        //words from the query
+
+        String[] tokensHolder = passedQuery.split(" ");
+        Set<String> queryRecords = new HashSet<>();
+
+        for (String x : tokensHolder) {
+            if (mappedFile.containsKey(x.toLowerCase())) {
+                for (Integer i : mappedFile.get(x)) {
+                    queryRecords.add(person.get(i));
+                }
+            }
+        }
+
+
+        Set<String> tmpDifference = new HashSet<>(person);
+        tmpDifference.removeAll(queryRecords);
+        tmpDifference.forEach(System.out::println);
+
+
+    }
+}
 
 public class Main {
 
@@ -21,9 +114,10 @@ public class Main {
         Map<String, LinkedHashSet<Integer>> mappedFile = new HashMap<>();
 
         //iterate through arraylist person
-        for(String p : person) {
+        for (String p : person) {
             //iterate through every word of element of person
-            for(String r : p.split("\s++")) {
+            for (String r : p.split("\s++")) {
+                r = r.toLowerCase();
                 if (mappedFile.containsKey(r)) {
                     mappedFile.get(r).add(person.indexOf(p));
                 } else {
@@ -49,7 +143,11 @@ public class Main {
             try {
                 int option = scanner.nextInt();
                 switch (option) {
-                    case 1 -> firstOption(person, mappedFile);
+                    case 1 -> {
+                        System.out.println("Select a matching strategy: ALL, ANY, NONE");
+                        Finder finder = StrategySetting();
+                        finder.find(person, mappedFile);
+                    }
                     case 2 -> secondOption(person);
                     case 0 -> stop = false;
                     default -> System.out.println("Incorrect option! Try again.");
@@ -63,50 +161,22 @@ public class Main {
         scanner.close();
     }
 
-    public static void firstOption(ArrayList<String> person, Map<String, LinkedHashSet<Integer>> mappedFile) {
-        /* it's a part of unused code from the bottom of this methods block
+    public static Finder StrategySetting() {
 
-        int index = 0;
-        int ac = 0;*/
-        System.out.println("Enter a name or email to search all suitable people.");
         scanner.nextLine();
-        String word = scanner.nextLine();
+        final String type = scanner.nextLine();
 
+        Finder finder = switch (type) {
+            case "ALL" -> new Finder(new AllFindingStrategy());
+            case "ANY" -> new Finder(new AnyFindingStrategy());
+            default -> new Finder(new NoneFindingStrategy());
+        };
 
-        if(mappedFile.containsKey(word)) {
-            for (Integer i : mappedFile.get(word)) {
-                System.out.println(person.get(i));
-            }
-        }
+        System.out.println("Enter a name or email to search all suitable people.");
+        finder.setPassedQuery(scanner.nextLine());
 
-
-        /* previous code used for searching the data
-
-        person.forEach((s -> {
-            if (s.toLowerCase().contains(word.toLowerCase())) {
-                System.out.println(s);
-            }
-        }));*/
-
-        /* this code has not been used, it was written for educational purposes only
-
-        person.stream().filter(s -> s.toLowerCase()
-                .contains(word.toLowerCase()))
-                .forEach(System.out::println);*/
-
-        /* this code has not been used, it was written for educational purposes only
-
-        for (String s : person) {
-            if (s.toLowerCase().contains(word.toLowerCase())) {
-                if (ac == 0) {
-                    System.out.println("Found people:");
-                    ac++;
-                }
-                System.out.println(s);
-            }
-        }*/
+        return finder;
     }
-
 
     public static void secondOption(ArrayList<String> person) {
         System.out.println("=== List of people ===");
